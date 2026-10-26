@@ -13,16 +13,18 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 let current="patterns", filters={};
 function hl(text,q){const e=esc(text);if(!q)return e;const re=new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig");return e.replace(re,"<mark>$1</mark>")}
 
+/* Cards are short summaries; everything else opens in the detail window. */
+let REG=[];
+function hasDetail(e){return !!(e.a||e.p||e.r||e.u||e.x||e.t||EX.get(norm(e.n)))}
 function card(e,q){
+  const id=REG.push(e)-1;
   const lv=e.lv?`<span class="lv" title="Level it operates at">${LEVELS[e.lv]}</span>`:"";
-  const rows=[];
-  if(e.p) rows.push(`<div class="row say"><span class="ic">S</span><div><span class="k">Say this to the AI</span><span class="txt">${hl(e.p,q)}</span><br><button class="copy" type="button" data-copy="${esc(e.p)}">Copy prompt</button></div></div>`);
-  if(e.r) rows.push(`<div class="row flag"><span class="ic">!</span><div><span class="k">Red flag in AI output</span>${hl(e.r,q)}</div></div>`);
-  if(e.u) rows.push(`<div class="row use"><span class="ic">✓</span><div><span class="k">When to use</span>${hl(e.u,q)}</div></div>`);
-  if(e.x) rows.push(`<div class="row skip"><span class="ic">×</span><div><span class="k">When not to use</span>${hl(e.x,q)}</div></div>`);
-  if(e.t) rows.push(`<div class="row tools"><span class="ic">T</span><div><span class="k">Tools</span>${hl(e.t,q)}</div></div>`);
-  return `<article class="card"><div class="hd"><div><h3>${hl(e.n,q)}</h3><div class="sub">${esc(e.c)}</div></div>${lv}</div>
-  <div class="bd"><p>${hl(e.w,q)}</p>${e.a?`<p class="an">${hl(e.a,q)}</p>`:""}${rows.join("")}${exampleBlock(e.n)}</div></article>`;
+  const body=`<div class="hd"><div><h3>${hl(e.n,q)}</h3><div class="sub">${esc(e.c)}</div></div>${lv}</div>
+    <p class="w">${hl(e.w,q)}</p>
+    ${e.u?`<p class="use-line"><span class="ic">✓</span><span>${hl(e.u,q)}</span></p>`:""}`;
+  if(!hasDetail(e)) return `<article class="card"><div class="card-in">${body}</div></article>`;
+  return `<article class="card"><button type="button" class="card-in" data-open="${id}" aria-haspopup="dialog">${body}
+    <span class="ft"><span class="more">Details →</span></span></button></article>`;
 }
 
 /* ---------- CODE EXAMPLES ---------- */
@@ -36,22 +38,40 @@ function colorCode(code,lang){
     return isComment?esc(line.slice(0,i))+`<span class="cm">${esc(line.slice(i))}</span>`:esc(line);
   }).join("\n");
 }
-function exampleBlock(name){
-  const ex=EX.get(norm(name));
-  if(!ex)return "";
-  return `<button type="button" class="ex-open" data-ex="${esc(name)}"><span class="ex-ic">&lt;/&gt;</span>Code example<span class="ex-langs">Python · JavaScript</span></button>`;
+/* ---------- DETAIL WINDOW ---------- */
+let OPEN=null, OPEN_TAB="overview";
+function row(cls,ic,label,text){return text?`<div class="row ${cls}"><span class="ic">${ic}</span><div><span class="k">${label}</span>${esc(text)}</div></div>`:""}
+function panelHtml(e,tab){
+  const ex=EX.get(norm(e.n));
+  if(tab==="prompt") return `<div class="pane"><p class="hint">Paste this into your AI tool, then add your project details.</p>
+    <pre class="prompt" id="dPromptText">${esc(e.p)}</pre><div><button type="button" id="dCopy" class="copy-btn">Copy prompt</button></div></div>`;
+  if(tab==="code"&&ex){
+    const langs=[["py","Python"],["js","JavaScript"]].filter(([k])=>ex[k]);
+    return `<div class="ex-tabs" role="group" aria-label="Language">${langs.map(([k,l])=>`<button type="button" class="ex-lang" data-lang="${k}">${l}</button>`).join("")}<button type="button" id="dCopy" class="copy-btn in-bar">Copy</button></div>
+    <div id="exBody">${langs.map(([k])=>`<pre class="code ${k}"><code>${colorCode(ex[k],k)}</code></pre>`).join("")}</div>`;
+  }
+  return `<div class="pane">
+    <p class="lead">${esc(e.w)}</p>${e.a?`<p class="an">${esc(e.a)}</p>`:""}
+    <div class="rows">${row("use","✓","When to use",e.u)}${row("skip","×","When not to use",e.x)}${row("flag","!","Red flag in AI output",e.r)}${row("tools","T","Tools",e.t)}</div></div>`;
 }
-function openExample(name){
-  const ex=EX.get(norm(name)), dlg=$("#exDialog");
-  if(!ex||!dlg)return;
-  const langs=[["py","Python"],["js","JavaScript"]].filter(([k])=>ex[k]);
-  const entry=[...PATTERNS,...PRINCIPLES,...TESTING,...SECURITY].find(e=>norm(e.n)===norm(name));
-  $("#exTitle").textContent=name;
-  $("#exSub").textContent=entry?entry.c+(entry.lv?" · "+LEVELS[entry.lv]:""):"";
-  $("#exLangs").innerHTML=langs.map(([k,l])=>`<button type="button" class="ex-lang" data-lang="${k}">${l}</button>`).join("");
-  $("#exBody").innerHTML=langs.map(([k])=>`<pre class="code ${k}"><code>${colorCode(ex[k],k)}</code></pre>`).join("");
-  $("#exCopy").textContent="Copy";
-  if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
+function drawDetail(){
+  const e=OPEN; if(!e)return;
+  const ex=EX.get(norm(e.n));
+  const tabs=[["overview","Overview"]];
+  if(e.p) tabs.push(["prompt","Prompt"]);
+  if(ex) tabs.push(["code","Code"]);
+  if(!tabs.some(t=>t[0]===OPEN_TAB)) OPEN_TAB="overview";
+  $("#dTabs").innerHTML=tabs.map(([k,l])=>`<button type="button" role="tab" class="d-tab" data-dtab="${k}" aria-selected="${k===OPEN_TAB}">${l}</button>`).join("");
+  $("#dPanel").innerHTML=panelHtml(e,OPEN_TAB);
+}
+function openDetail(e,tab){
+  const dlg=$("#exDialog"); if(!dlg)return;
+  OPEN=e; OPEN_TAB=tab||"overview";
+  $("#exTitle").textContent=e.n;
+  $("#exSub").textContent=e.c+(e.lv?" · "+LEVELS[e.lv]:"");
+  drawDetail();
+  if(typeof dlg.showModal==="function"){if(!dlg.open)dlg.showModal()}else dlg.setAttribute("open","");
+  $("#dPanel").scrollTop=0;
 }
 function setLang(l){document.documentElement.dataset.codeLang=l;try{localStorage.setItem("codeLang",l)}catch(e){}}
 try{setLang(localStorage.getItem("codeLang")||"py")}catch(e){setLang("py")}
@@ -61,7 +81,7 @@ function chipBar(id,list){
   return `<div class="chips" data-for="${id}">${cats.map(c=>`<button class="chip" type="button" aria-pressed="${c===f}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
 }
 function filtered(id,list){const f=filters[id]||"All";return f==="All"?list:list.filter(e=>e.c===f)}
-const legend=`<div class="legend"><span><i style="background:var(--go)"></i>Say this to the AI</span><span><i style="background:var(--warn)"></i>Red flag in AI output</span><span><i style="background:var(--use)"></i>When to use</span><span><i style="background:var(--hold)"></i>When not to use</span><span><i style="background:var(--cobalt)"></i>Tools</span></div>`;
+const legend=`<div class="legend" hidden><span><i style="background:var(--go)"></i>Say this to the AI</span><span><i style="background:var(--warn)"></i>Red flag in AI output</span><span><i style="background:var(--use)"></i>When to use</span><span><i style="background:var(--hold)"></i>When not to use</span><span><i style="background:var(--cobalt)"></i>Tools</span></div>`;
 const ladder=`<div class="panel"><h3>The level it operates at</h3><div class="ladder">
 ${Object.entries({1:["Code","a line, a function"],2:["Module","a class, a file"],3:["Feature","a component, a service"],4:["System","architecture, many services"],5:["Process","team, release, lifecycle"]}).map(([k,v])=>`<div class="rung"><b>L${k}</b><span>${v[0]} <em>· ${v[1]}</em></span></div>`).join("")}
 </div><p class="label" style="margin-top:10px">You work at L2–L5. The AI handles L1 syntax.</p></div>`;
@@ -70,7 +90,7 @@ function viewPatterns(){
   return `<div class="intro"><div><span class="label">Sheet 01</span><h2>Design Patterns</h2>
   <p class="lede">Proven shapes for recurring problems. You don’t need the syntax; you need the name. Naming a pattern in a prompt gives the AI a precise blueprint instead of letting it improvise.</p>
   <p>Includes all 23 classic ‘Gang of Four’ patterns plus the architectural, resilience and AI-era patterns used in modern systems.</p></div>${ladder}</div>
-  ${legend}${chipBar("patterns",PATTERNS)}<span class="count">${filtered("patterns",PATTERNS).length} patterns</span>
+  ${chipBar("patterns",PATTERNS)}<span class="count">${filtered("patterns",PATTERNS).length} patterns</span>
   <div class="grid">${filtered("patterns",PATTERNS).map(e=>card(e)).join("")}</div>`;
 }
 function viewPrinciples(){
@@ -78,7 +98,7 @@ function viewPrinciples(){
   <p class="lede">Patterns are solutions; principles are the rules you judge any solution by. Use them as review questions on every piece of AI-generated code.</p>
   <p>Fastest win: after the AI writes something, ask it to review its own output against SOLID, DRY, KISS and YAGNI and list violations.</p></div>
   <div class="panel"><h3>One review prompt</h3><p class="row say" style="margin:0"><span class="ic">S</span><span class="txt" style="font-family:var(--f-mono);font-size:12.5px">Review this change against SOLID, DRY, KISS, YAGNI and separation of concerns. List each violation with file, line, why it matters, and a fix. Don’t rewrite unrelated code.</span></p></div></div>
-  ${legend}${chipBar("principles",PRINCIPLES)}<span class="count">${filtered("principles",PRINCIPLES).length} principles</span>
+  ${chipBar("principles",PRINCIPLES)}<span class="count">${filtered("principles",PRINCIPLES).length} principles</span>
   <div class="grid">${filtered("principles",PRINCIPLES).map(e=>card(e)).join("")}</div>`;
 }
 function viewTesting(){
@@ -88,7 +108,7 @@ function viewTesting(){
   <p>The core rule for vibe coders: write the expected behaviour first (acceptance criteria), then let the AI build to it, then let CI prove it on every change.</p></div>
   <div class="panel"><h3>Minimum viable QA</h3><p style="margin:0;font-size:13.5px">1. Acceptance criteria for every feature.<br>2. Unit tests on all calculations.<br>3. E2E tests on 3–5 critical journeys.<br>4. CI blocks merge on any failure.<br>5. Error tracking in production.</p></div></div>
   <div><span class="label">A standard CI/CD pipeline, left to right</span><div class="pipe" style="margin-top:8px">${stages.map((s,i)=>`<div class="stage${s[1]==="Gate"?" gate":""}"><span class="label">${String(i+1).padStart(2,"0")} · ${s[1]}</span><strong>${s[0]}</strong>${s[2]}</div>`).join("")}</div></div>
-  ${legend}${chipBar("testing",TESTING)}<span class="count">${filtered("testing",TESTING).length} entries</span>
+  ${chipBar("testing",TESTING)}<span class="count">${filtered("testing",TESTING).length} entries</span>
   <div class="grid">${filtered("testing",TESTING).map(e=>card(e)).join("")}</div>`;
 }
 function viewSecurity(){
@@ -96,7 +116,7 @@ function viewSecurity(){
   <p class="lede">AI-generated code fails most often here, because insecure code still works in a demo. Security bugs only show up when someone attacks.</p>
   <p>Built on the OWASP Top 10 (2025 edition) for web apps, plus the OWASP list of risks specific to LLM features.</p></div>
   <div class="warnbox"><b>Never let the AI:</b> put API keys in frontend code · build SQL from strings · write its own login or crypto · install packages you haven’t verified · give an AI agent write access without an approval step.</div></div>
-  ${legend}${chipBar("security",SECURITY)}<span class="count">${filtered("security",SECURITY).length} entries</span>
+  ${chipBar("security",SECURITY)}<span class="count">${filtered("security",SECURITY).length} entries</span>
   <div class="grid">${filtered("security",SECURITY).map(e=>card(e)).join("")}</div>`;
 }
 function viewCompliance(){
@@ -151,6 +171,7 @@ function renderTabs(){
   $("#tabs").innerHTML=TABS.map((t,i)=>`<button role="tab" type="button" id="tab-${t.id}" aria-selected="${t.id===current&&!$("#q").value}" data-tab="${t.id}"><span class="no">${String(i+1).padStart(2,"0")}</span>${t.label}</button>`).join("");
 }
 function render(){
+  REG=[];
   const q=$("#q").value.trim();
   $("#main").innerHTML=`<section class="sheet">${q?searchAll(q):VIEWS[current]()}</section>`;
   renderTabs();
@@ -164,15 +185,18 @@ document.addEventListener("click",ev=>{
   if(st){stackPick=st.dataset.stack;render();return}
   const lb=ev.target.closest(".ex-lang");
   if(lb){setLang(lb.dataset.lang);return}
-  const eo=ev.target.closest(".ex-open");
-  if(eo){openExample(eo.dataset.ex);return}
+  const op=ev.target.closest("[data-open]");
+  if(op){openDetail(REG[+op.dataset.open]);return}
+  const dt=ev.target.closest("[data-dtab]");
+  if(dt){OPEN_TAB=dt.dataset.dtab;drawDetail();return}
   if(ev.target.closest("#exClose")||ev.target.id==="exDialog"){$("#exDialog").close();return}
-  const ec=ev.target.closest("#exCopy");
-  if(ec){const box=$("#exBody");const lang=document.documentElement.dataset.codeLang;
-    const pre=box.querySelector("pre.code."+lang)||box.querySelector("pre.code");
-    const done=()=>{ec.textContent="Copied";setTimeout(()=>ec.textContent="Copy",1400)};
-    const fallback=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);ec.textContent="Press Ctrl+C"};
-    try{navigator.clipboard.writeText(pre.innerText).then(done,fallback)}catch(e){fallback()}
+  const ec=ev.target.closest("#dCopy");
+  if(ec){let txt="",el;
+    if(OPEN_TAB==="prompt"){el=$("#dPromptText");txt=OPEN.p}
+    else{const lang=document.documentElement.dataset.codeLang;el=$("#exBody pre.code."+lang)||$("#exBody pre.code");txt=el.innerText}
+    const label=ec.textContent;const done=()=>{ec.textContent="Copied";setTimeout(()=>ec.textContent=label,1400)};
+    const fallback=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);ec.textContent="Press Ctrl+C"};
+    try{navigator.clipboard.writeText(txt).then(done,fallback)}catch(e){fallback()}
     return}
   const cp=ev.target.closest(".copy");
   if(cp){const txt=cp.dataset.copy;const done=()=>{cp.textContent="Copied";setTimeout(()=>cp.textContent="Copy prompt",1400)};
@@ -182,3 +206,10 @@ function selectText(btn){const el=btn.previousElementSibling.previousElementSibl
 let t;$("#q").addEventListener("input",()=>{clearTimeout(t);t=setTimeout(render,120)});
 const h=(location.hash||"").slice(1);if(VIEWS[h])current=h;
 render();
+const hdr=document.querySelector("header.top");
+let compact=false;
+window.addEventListener("scroll",()=>{
+  const y=window.scrollY;
+  if(!compact&&y>90){compact=true;hdr.classList.add("compact")}
+  else if(compact&&y<20){compact=false;hdr.classList.remove("compact")}
+},{passive:true});
