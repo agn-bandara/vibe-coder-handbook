@@ -17,6 +17,7 @@ Each entry says what the idea is, the level it operates at (L1 code → L5 proce
 | File | What it holds | Edit it when… |
 |------|---------------|---------------|
 | `content.js` | All the content: every pattern, principle, test method, security risk, compliance regime, stack and SDLC model | You want to add, fix or update an entry |
+| `examples.js` | Python and JavaScript code examples, keyed by entry name | You want to add or improve a code example |
 | `app.js` | How the sheets are drawn, search, filters, tabs | You want to change behaviour |
 | `index.html` | Page shell and styles | You want to change the look |
 
@@ -35,6 +36,18 @@ Open `content.js`, find the right list (`PATTERNS`, `PRINCIPLES`, `TESTING`, `SE
 | `r` | Red flag in AI output |
 | `x` | When not to use it |
 | `t` | Tools (optional) |
+
+### Adding a code example
+
+In `examples.js`, add a key with the entry's name (case, spaces and punctuation are ignored when matching) and a `py` and/or `js` value:
+
+```js
+"Strategy": {
+py: R`def standard(t): return t`,
+js: R`const standard = (t) => t;`},
+```
+
+Examples are wrapped in `R`…`` (String.raw), so backslashes stay as typed. Don't type a dollar sign followed by an opening brace inside an example. Lines starting with `#` (Python) or `//` (JavaScript) are shown as comments.
 
 Inside the text, use curly quotes (‘ ’ “ ”) or escape straight double quotes, because entries are double-quoted strings.
 

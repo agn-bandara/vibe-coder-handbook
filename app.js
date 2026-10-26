@@ -21,8 +21,30 @@ function card(e,q){
   if(e.x) rows.push(`<div class="row skip"><span class="ic">×</span><div><span class="k">When not to use</span>${hl(e.x,q)}</div></div>`);
   if(e.t) rows.push(`<div class="row tools"><span class="ic">T</span><div><span class="k">Tools</span>${hl(e.t,q)}</div></div>`);
   return `<article class="card"><div class="hd"><div><h3>${hl(e.n,q)}</h3><div class="sub">${esc(e.c)}</div></div>${lv}</div>
-  <div class="bd"><p>${hl(e.w,q)}</p>${e.a?`<p class="an">${hl(e.a,q)}</p>`:""}${rows.join("")}</div></article>`;
+  <div class="bd"><p>${hl(e.w,q)}</p>${e.a?`<p class="an">${hl(e.a,q)}</p>`:""}${rows.join("")}${exampleBlock(e.n)}</div></article>`;
 }
+
+/* ---------- CODE EXAMPLES ---------- */
+const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,"");
+const EX=new Map(Object.entries(typeof EXAMPLES==="object"?EXAMPLES:{}).map(([k,v])=>[norm(k),v]));
+function colorCode(code,lang){
+  const mark=lang==="py"?"#":"//";
+  return code.split("\n").map(line=>{
+    const i=line.indexOf(mark);
+    const isComment=i>=0&&(line.slice(0,i).trim()===""||/\s{2,}$/.test(line.slice(0,i)));
+    return isComment?esc(line.slice(0,i))+`<span class="cm">${esc(line.slice(i))}</span>`:esc(line);
+  }).join("\n");
+}
+function exampleBlock(name){
+  const ex=EX.get(norm(name));
+  if(!ex)return "";
+  const langs=[["py","Python"],["js","JavaScript"]].filter(([k])=>ex[k]);
+  return `<details class="ex"><summary>Code example</summary>
+  <div class="ex-tabs" role="group" aria-label="Language">${langs.map(([k,l])=>`<button type="button" class="ex-lang" data-lang="${k}">${l}</button>`).join("")}<button type="button" class="ex-copy">Copy</button></div>
+  ${langs.map(([k])=>`<pre class="code ${k}"><code>${colorCode(ex[k],k)}</code></pre>`).join("")}</details>`;
+}
+function setLang(l){document.documentElement.dataset.codeLang=l;try{localStorage.setItem("codeLang",l)}catch(e){}}
+try{setLang(localStorage.getItem("codeLang")||"py")}catch(e){setLang("py")}
 function chipBar(id,list){
   const cats=["All",...new Set(list.map(e=>e.c))];
   const f=filters[id]||"All";
@@ -130,6 +152,15 @@ document.addEventListener("click",ev=>{
   if(chip){filters[chip.parentElement.dataset.for]=chip.dataset.cat;render();return}
   const st=ev.target.closest("[data-stack]");
   if(st){stackPick=st.dataset.stack;render();return}
+  const lb=ev.target.closest(".ex-lang");
+  if(lb){setLang(lb.dataset.lang);return}
+  const ec=ev.target.closest(".ex-copy");
+  if(ec){const box=ec.closest(".ex");const lang=document.documentElement.dataset.codeLang;
+    const pre=box.querySelector("pre.code."+lang)||box.querySelector("pre.code");
+    const done=()=>{ec.textContent="Copied";setTimeout(()=>ec.textContent="Copy",1400)};
+    const fallback=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);ec.textContent="Press Ctrl+C"};
+    try{navigator.clipboard.writeText(pre.innerText).then(done,fallback)}catch(e){fallback()}
+    return}
   const cp=ev.target.closest(".copy");
   if(cp){const txt=cp.dataset.copy;const done=()=>{cp.textContent="Copied";setTimeout(()=>cp.textContent="Copy prompt",1400)};
     try{navigator.clipboard.writeText(txt).then(done,()=>{selectText(cp)})}catch(e){selectText(cp)}}
