@@ -10,6 +10,8 @@ Seven searchable cheat sheets that close the gap between vibe coding and softwar
 6. Tech Stack Selector
 7. SDLC
 
+Plus a **Find by Problem** start page that maps everyday problems to the right entries (edit `PROBLEMS` in `content.js`).
+
 Each entry says what the idea is, the level it operates at (L1 code → L5 process), a prompt to give the AI, a red flag to spot in AI output, and when to use it and when not to.
 
 ## Files

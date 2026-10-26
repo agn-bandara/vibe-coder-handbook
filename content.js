@@ -298,3 +298,36 @@ const PHASES=[
 ["Maintain / Retire","Update dependencies, fix, improve, eventually decommission.","Dependabot, changelog, data export on retirement"]
 ];
 
+
+/* ---------- PROBLEM FINDER ----------
+   Each problem lists entry names from the other sheets (matching ignores case and punctuation). */
+const PROBLEMS=[
+{g:"Structure",q:"One giant file does everything",to:["S — Single Responsibility","Separation of Concerns","Facade","MVC / MVVM"]},
+{g:"Structure",q:"The same logic is copied in several places",to:["DRY — Don’t Repeat Yourself","Rule of Three","Single Source of Truth","Template Method"]},
+{g:"Structure",q:"Long if/else chains for different types or modes",to:["Strategy","Factory Method","State","O — Open/Closed"]},
+{g:"Structure",q:"Objects have status flags that get out of sync",to:["State","Make Illegal States Unrepresentable","Encapsulation"]},
+{g:"Structure",q:"Fixing one feature breaks another",to:["High Cohesion, Low Coupling","Regression Test","Unit Test","Continuous Integration (CI)"]},
+{g:"Structure",q:"The AI over-engineers or adds things I didn’t ask for",to:["YAGNI — You Aren’t Gonna Need It","KISS — Keep It Simple","Gall’s Law","Monolith (modular)"]},
+{g:"Structure",q:"Creating objects needs lots of settings",to:["Builder","Prototype","Abstract Factory","Explicit over Implicit"]},
+{g:"Features",q:"Users need undo / redo or version history",to:["Command","Memento","Event Sourcing"]},
+{g:"Features",q:"Nested data: assemblies, folders, BOM trees",to:["Composite","Visitor","Iterator"]},
+{g:"Features",q:"Several parts must react when something changes",to:["Observer","Event-Driven / Pub-Sub","Mediator"]},
+{g:"Features",q:"Logging, caching or timing needed around many functions",to:["Decorator","Proxy","Chain of Responsibility"]},
+{g:"Features",q:"Users type formulas or rules",to:["Interpreter","A05 Injection","Fuzzing"]},
+{g:"Features",q:"Handling huge files or datasets",to:["Iterator","Flyweight","Performance & Load Testing","CQRS"]},
+{g:"Integration",q:"My logic only works inside AutoCAD / one host and can’t be tested",to:["Hexagonal (Ports & Adapters)","Dependency Injection","Adapter","Unit Test"]},
+{g:"Integration",q:"Switching vendor or provider would mean a rewrite",to:["Adapter","D — Dependency Inversion","Repository","Bridge"]},
+{g:"Integration",q:"An external API is slow or keeps failing",to:["Retry with Backoff","Circuit Breaker","Chaos & Resilience Testing","Monitoring & Observability"]},
+{g:"Integration",q:"Orders or payments happen twice",to:["Idempotency Key","Outbox","Retry with Backoff"]},
+{g:"Integration",q:"A process spans several steps or services and can fail halfway",to:["Saga","Outbox","A10 Mishandling Exceptional Conditions"]},
+{g:"Integration",q:"Replacing an old system without a big-bang switch",to:["Strangler Fig","Contract Test","Regression Test","Feature Flags"]},
+{g:"Quality",q:"I don’t know if the AI’s tests are any good",to:["AI-Generated Tests","Mutation Testing","Code Coverage","TDD — Test-Driven Development"]},
+{g:"Quality",q:"Releasing feels risky",to:["Feature Flags","Blue-Green & Canary Releases","Rollback Plan","Smoke Test","Environments"]},
+{g:"Quality",q:"The app is slow",to:["Premature Optimisation","Performance & Load Testing","CQRS","Monitoring & Observability"]},
+{g:"Quality",q:"Bad data gets into the database",to:["Validate at the Boundary","Input Validation","Fail Fast","Design by Contract"]},
+{g:"Security",q:"Users might see other users’ data",to:["A01 Broken Access Control","Defence in Depth","Least Privilege"]},
+{g:"Security",q:"API keys or passwords are in the code",to:["Secrets Management","Twelve-Factor App","A04 Cryptographic Failures"]},
+{g:"Security",q:"Building login and accounts",to:["A07 Authentication Failures","Rate Limiting","A04 Cryptographic Failures"]},
+{g:"AI features",q:"AI answers are made up instead of from our documents",to:["RAG (Retrieval-Augmented Generation)","LLM Evals","Guardrail / Validation Layer"]},
+{g:"AI features",q:"AI output could break the app or do something unsafe",to:["Guardrail / Validation Layer","Prompt Injection","Excessive Agency","Agent / Tool-Use Loop"]}
+];
