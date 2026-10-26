@@ -99,19 +99,26 @@ section.sheet{display:grid;gap:22px}
 .row .k{font-family:var(--f-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;display:block;color:var(--ink-2)}
 .say .txt{font-family:var(--f-mono);font-size:12.5px}
 .copy{margin-top:4px;font:500 11px var(--f-mono);border:1px solid var(--go);color:var(--go);background:transparent;padding:2px 8px;cursor:pointer;border-radius:2px}
-.ex{border:1px solid var(--rule);background:var(--paper)}
-.ex summary{cursor:pointer;font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);padding:7px 9px;list-style:none;display:flex;align-items:center;gap:8px}
-.ex summary::-webkit-details-marker{display:none}
-.ex summary::before{content:"</>";font-weight:500;color:var(--cobalt)}
-.ex summary::after{content:"+";margin-left:auto;font-size:14px}
-.ex[open] summary::after{content:"\2212"}
-.ex-tabs{display:flex;gap:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
-.ex-lang,.ex-copy{font:500 11.5px var(--f-mono);padding:5px 10px;border:0;border-right:1px solid var(--rule);background:transparent;color:var(--ink-2);cursor:pointer}
-.ex-copy{margin-left:auto;border-right:0;border-left:1px solid var(--rule)}
+.ex-open{display:flex;align-items:center;gap:8px;width:100%;font:500 11.5px var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink);background:var(--paper);border:1px solid var(--rule);padding:7px 9px;cursor:pointer;text-align:left;border-radius:2px}
+.ex-open:hover{border-color:var(--cobalt);color:var(--cobalt)}
+.ex-open .ex-ic{color:var(--cobalt);font-weight:500}
+.ex-open .ex-langs{margin-left:auto;text-transform:none;letter-spacing:0;color:var(--ink-2);font-size:11px}
+dialog#exDialog{padding:0;border:1.5px solid var(--ink);background:var(--sheet);color:var(--ink);width:min(820px,calc(100vw - 32px));max-height:calc(100dvh - 48px);border-radius:2px;box-shadow:0 18px 48px rgba(0,0,0,.28)}
+dialog#exDialog::backdrop{background:rgba(10,16,22,.55)}
+.exd{display:flex;flex-direction:column;max-height:calc(100dvh - 48px)}
+.exd-hd{display:flex;align-items:flex-start;gap:12px;padding:14px 16px 10px;border-bottom:2px solid var(--ink)}
+.exd-hd h2{font-size:24px;font-weight:700;text-transform:uppercase;line-height:1.05}
+.exd-hd .sub{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+#exClose{margin-left:auto;font:600 20px var(--f-body);line-height:1;width:34px;height:34px;border:1px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer;border-radius:2px;flex:0 0 auto}
+.ex-tabs{display:flex;border-bottom:1px solid var(--rule);background:var(--paper)}
+.ex-lang,#exCopy{font:500 12px var(--f-mono);padding:8px 14px;border:0;border-right:1px solid var(--rule);background:transparent;color:var(--ink-2);cursor:pointer}
+#exCopy{margin-left:auto;border-right:0;border-left:1px solid var(--rule);color:var(--go)}
 :root[data-code-lang="py"] .ex-lang[data-lang="py"],:root[data-code-lang="js"] .ex-lang[data-lang="js"]{background:var(--ink);color:var(--sheet)}
-pre.code{margin:0;padding:10px 12px;overflow-x:auto;font-family:var(--f-mono);font-size:12px;line-height:1.5;background:var(--sheet);color:var(--ink);tab-size:4}
+#exBody{overflow:auto;min-height:0}
+pre.code{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--f-mono);font-size:13px;line-height:1.6;background:var(--sheet);color:var(--ink);tab-size:4}
 pre.code .cm{color:var(--go)}
-:root[data-code-lang="py"] .ex:has(pre.py) pre.js,:root[data-code-lang="js"] .ex:has(pre.js) pre.py{display:none}
+:root[data-code-lang="py"] #exBody:has(pre.py) pre.js,:root[data-code-lang="js"] #exBody:has(pre.js) pre.py{display:none}
+.exd-ft{padding:8px 16px;border-top:1px solid var(--rule);font-family:var(--f-mono);font-size:11px;color:var(--ink-2)}
 mark{background:var(--hold-soft);color:inherit;padding:0 1px}
 
 /* Legend */
@@ -206,6 +213,14 @@ footer{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);padding-blo
 <footer class="wrap">Legend on every entry: <b>S</b> = say this to the AI · <b>!</b> = red flag in AI output · <b>×</b> = when not to use · <b>T</b> = tools · <b>&lt;/&gt;</b> = code example in Python or JavaScript. Compliance dates checked October 2026; laws change, so confirm with the regulator or a qualified advisor before you rely on them.</footer>
 
 
+<dialog id="exDialog" aria-labelledby="exTitle">
+  <div class="exd">
+    <div class="exd-hd"><div><h2 id="exTitle">Code example</h2><div class="sub" id="exSub"></div></div><button type="button" id="exClose" aria-label="Close">×</button></div>
+    <div class="ex-tabs" role="group" aria-label="Language"><span id="exLangs" style="display:flex"></span><button type="button" id="exCopy">Copy</button></div>
+    <div id="exBody"></div>
+    <div class="exd-ft">Esc or click outside to close · Your language choice is remembered</div>
+  </div>
+</dialog>
 <script src="content.js"></script>
 <script src="examples.js"></script>
 <script src="app.js"></script>

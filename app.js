@@ -38,10 +38,19 @@ function colorCode(code,lang){
 function exampleBlock(name){
   const ex=EX.get(norm(name));
   if(!ex)return "";
+  return `<button type="button" class="ex-open" data-ex="${esc(name)}"><span class="ex-ic">&lt;/&gt;</span>Code example<span class="ex-langs">Python · JavaScript</span></button>`;
+}
+function openExample(name){
+  const ex=EX.get(norm(name)), dlg=$("#exDialog");
+  if(!ex||!dlg)return;
   const langs=[["py","Python"],["js","JavaScript"]].filter(([k])=>ex[k]);
-  return `<details class="ex"><summary>Code example</summary>
-  <div class="ex-tabs" role="group" aria-label="Language">${langs.map(([k,l])=>`<button type="button" class="ex-lang" data-lang="${k}">${l}</button>`).join("")}<button type="button" class="ex-copy">Copy</button></div>
-  ${langs.map(([k])=>`<pre class="code ${k}"><code>${colorCode(ex[k],k)}</code></pre>`).join("")}</details>`;
+  const entry=[...PATTERNS,...PRINCIPLES,...TESTING,...SECURITY].find(e=>norm(e.n)===norm(name));
+  $("#exTitle").textContent=name;
+  $("#exSub").textContent=entry?entry.c+(entry.lv?" · "+LEVELS[entry.lv]:""):"";
+  $("#exLangs").innerHTML=langs.map(([k,l])=>`<button type="button" class="ex-lang" data-lang="${k}">${l}</button>`).join("");
+  $("#exBody").innerHTML=langs.map(([k])=>`<pre class="code ${k}"><code>${colorCode(ex[k],k)}</code></pre>`).join("");
+  $("#exCopy").textContent="Copy";
+  if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
 }
 function setLang(l){document.documentElement.dataset.codeLang=l;try{localStorage.setItem("codeLang",l)}catch(e){}}
 try{setLang(localStorage.getItem("codeLang")||"py")}catch(e){setLang("py")}
@@ -154,8 +163,11 @@ document.addEventListener("click",ev=>{
   if(st){stackPick=st.dataset.stack;render();return}
   const lb=ev.target.closest(".ex-lang");
   if(lb){setLang(lb.dataset.lang);return}
-  const ec=ev.target.closest(".ex-copy");
-  if(ec){const box=ec.closest(".ex");const lang=document.documentElement.dataset.codeLang;
+  const eo=ev.target.closest(".ex-open");
+  if(eo){openExample(eo.dataset.ex);return}
+  if(ev.target.closest("#exClose")||ev.target.id==="exDialog"){$("#exDialog").close();return}
+  const ec=ev.target.closest("#exCopy");
+  if(ec){const box=$("#exBody");const lang=document.documentElement.dataset.codeLang;
     const pre=box.querySelector("pre.code."+lang)||box.querySelector("pre.code");
     const done=()=>{ec.textContent="Copied";setTimeout(()=>ec.textContent="Copy",1400)};
     const fallback=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);ec.textContent="Press Ctrl+C"};
