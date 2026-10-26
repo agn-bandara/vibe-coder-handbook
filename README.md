@@ -10,7 +10,7 @@ Seven searchable cheat sheets that close the gap between vibe coding and softwar
 6. Tech Stack Selector
 7. SDLC
 
-Each entry says what the idea is, the level it operates at (L1 code → L5 process), a prompt to give the AI, a red flag to spot in AI output, and when not to use it.
+Each entry says what the idea is, the level it operates at (L1 code → L5 process), a prompt to give the AI, a red flag to spot in AI output, and when to use it and when not to.
 
 ## Files
 
@@ -34,6 +34,7 @@ Open `content.js`, find the right list (`PATTERNS`, `PRINCIPLES`, `TESTING`, `SE
 | `a` | Everyday analogy (optional) |
 | `p` | “Say this to the AI” prompt |
 | `r` | Red flag in AI output |
+| `u` | When to use it |
 | `x` | When not to use it |
 | `t` | Tools (optional) |
 

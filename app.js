@@ -18,6 +18,7 @@ function card(e,q){
   const rows=[];
   if(e.p) rows.push(`<div class="row say"><span class="ic">S</span><div><span class="k">Say this to the AI</span><span class="txt">${hl(e.p,q)}</span><br><button class="copy" type="button" data-copy="${esc(e.p)}">Copy prompt</button></div></div>`);
   if(e.r) rows.push(`<div class="row flag"><span class="ic">!</span><div><span class="k">Red flag in AI output</span>${hl(e.r,q)}</div></div>`);
+  if(e.u) rows.push(`<div class="row use"><span class="ic">✓</span><div><span class="k">When to use</span>${hl(e.u,q)}</div></div>`);
   if(e.x) rows.push(`<div class="row skip"><span class="ic">×</span><div><span class="k">When not to use</span>${hl(e.x,q)}</div></div>`);
   if(e.t) rows.push(`<div class="row tools"><span class="ic">T</span><div><span class="k">Tools</span>${hl(e.t,q)}</div></div>`);
   return `<article class="card"><div class="hd"><div><h3>${hl(e.n,q)}</h3><div class="sub">${esc(e.c)}</div></div>${lv}</div>
@@ -60,7 +61,7 @@ function chipBar(id,list){
   return `<div class="chips" data-for="${id}">${cats.map(c=>`<button class="chip" type="button" aria-pressed="${c===f}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
 }
 function filtered(id,list){const f=filters[id]||"All";return f==="All"?list:list.filter(e=>e.c===f)}
-const legend=`<div class="legend"><span><i style="background:var(--go)"></i>Say this to the AI</span><span><i style="background:var(--warn)"></i>Red flag in AI output</span><span><i style="background:var(--hold)"></i>When not to use</span><span><i style="background:var(--cobalt)"></i>Tools</span></div>`;
+const legend=`<div class="legend"><span><i style="background:var(--go)"></i>Say this to the AI</span><span><i style="background:var(--warn)"></i>Red flag in AI output</span><span><i style="background:var(--use)"></i>When to use</span><span><i style="background:var(--hold)"></i>When not to use</span><span><i style="background:var(--cobalt)"></i>Tools</span></div>`;
 const ladder=`<div class="panel"><h3>The level it operates at</h3><div class="ladder">
 ${Object.entries({1:["Code","a line, a function"],2:["Module","a class, a file"],3:["Feature","a component, a service"],4:["System","architecture, many services"],5:["Process","team, release, lifecycle"]}).map(([k,v])=>`<div class="rung"><b>L${k}</b><span>${v[0]} <em>· ${v[1]}</em></span></div>`).join("")}
 </div><p class="label" style="margin-top:10px">You work at L2–L5. The AI handles L1 syntax.</p></div>`;

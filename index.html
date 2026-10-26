@@ -19,6 +19,7 @@ body{margin:0}img{max-width:100%}[hidden]{display:none!important}
   --go:#1F6E4E; --go-soft:#E0F0E8;
   --warn:#A3471A; --warn-soft:#F8E6DC;
   --hold:#6B5B12; --hold-soft:#F3EDD2;
+  --use:#1E6A80; --use-soft:#DCEDF2;
   --f-disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
@@ -26,11 +27,11 @@ body{margin:0}img{max-width:100%}[hidden]{display:none!important}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --paper:#0F151B; --sheet:#151D25; --ink:#DCE4EA; --ink-2:#99A6B1; --rule:#2B3742;
   --cobalt:#86A6FF; --cobalt-soft:#1B2747; --go:#6FCFA2; --go-soft:#14302A;
-  --warn:#F09A6C; --warn-soft:#3A2218; --hold:#D9C46A; --hold-soft:#2F2A12; color-scheme:dark}}
+  --warn:#F09A6C; --warn-soft:#3A2218; --hold:#D9C46A; --hold-soft:#2F2A12; --use:#7CC8DE; --use-soft:#12303A; color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#0F151B; --sheet:#151D25; --ink:#DCE4EA; --ink-2:#99A6B1; --rule:#2B3742;
   --cobalt:#86A6FF; --cobalt-soft:#1B2747; --go:#6FCFA2; --go-soft:#14302A;
-  --warn:#F09A6C; --warn-soft:#3A2218; --hold:#D9C46A; --hold-soft:#2F2A12; color-scheme:dark}
+  --warn:#F09A6C; --warn-soft:#3A2218; --hold:#D9C46A; --hold-soft:#2F2A12; --use:#7CC8DE; --use-soft:#12303A; color-scheme:dark}
 
 *{box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
@@ -94,6 +95,7 @@ section.sheet{display:grid;gap:22px}
 .row .ic{font-family:var(--f-mono);font-weight:500;font-size:12px;text-align:center;line-height:20px;width:20px;height:20px;border-radius:2px}
 .row.say{background:var(--go-soft)} .row.say .ic{background:var(--go);color:var(--sheet)}
 .row.flag{background:var(--warn-soft)} .row.flag .ic{background:var(--warn);color:var(--sheet)}
+.row.use{background:var(--use-soft)} .row.use .ic{background:var(--use);color:var(--sheet)}
 .row.skip{background:var(--hold-soft)} .row.skip .ic{background:var(--hold);color:var(--sheet)}
 .row.tools{background:var(--cobalt-soft)} .row.tools .ic{background:var(--cobalt);color:var(--sheet)}
 .row .k{font-family:var(--f-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;display:block;color:var(--ink-2)}
@@ -210,7 +212,7 @@ footer{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);padding-blo
 
 <main class="wrap" id="main"></main>
 
-<footer class="wrap">Legend on every entry: <b>S</b> = say this to the AI · <b>!</b> = red flag in AI output · <b>×</b> = when not to use · <b>T</b> = tools · <b>&lt;/&gt;</b> = code example in Python or JavaScript. Compliance dates checked October 2026; laws change, so confirm with the regulator or a qualified advisor before you rely on them.</footer>
+<footer class="wrap">Legend on every entry: <b>S</b> = say this to the AI · <b>!</b> = red flag in AI output · <b>✓</b> = when to use · <b>×</b> = when not to use · <b>T</b> = tools · <b>&lt;/&gt;</b> = code example in Python or JavaScript. Compliance dates checked October 2026; laws change, so confirm with the regulator or a qualified advisor before you rely on them.</footer>
 
 
 <dialog id="exDialog" aria-labelledby="exTitle">
@@ -221,8 +223,8 @@ footer{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);padding-blo
     <div class="exd-ft">Esc or click outside to close · Your language choice is remembered</div>
   </div>
 </dialog>
-<script src="content.js?v=202610261752"></script>
-<script src="examples.js?v=202610261752"></script>
-<script src="app.js?v=202610261752"></script>
+<script src="content.js?v=202610261756"></script>
+<script src="examples.js?v=202610261756"></script>
+<script src="app.js?v=202610261756"></script>
 </body>
 </html>
