@@ -140,12 +140,18 @@ function viewCompliance(){
 let stackPick="web";
 function viewStack(){
   const s=STACKS[stackPick];
+  const picks=s.L.filter(l=>l[1]).map(l=>l[1]);
+  const prompt=stackPick==="agent"
+    ? "Build this agent with: "+picks.join("; ")+". Give it only the tools it needs, validate every model reply against a schema, require my approval before any write or delete, and add tracing from the start. Don’t add other frameworks without asking me and explaining why."
+    : "Use this stack: "+picks.join("; ")+". Don’t add other frameworks or services without asking me and explaining why.";
   return `<div class="intro"><div><span class="label">Sheet 06</span><h2>Tech Stack Selector</h2>
-  <p class="lede">Pick what you’re building to see a sensible default stack, layer by layer. Then use the feature table to pick libraries.</p></div>
-  <div class="okbox"><b>Selection rules.</b> Choose boring, popular tools: the AI has seen far more examples of them, so it writes better code. One language where you can. Managed services over self-hosting. Only add a technology when you can name the problem it solves.</div></div>
+  <p class="lede">Pick what you’re building to see a sensible default for each layer, plus the main alternatives. Then use the feature table to pick libraries.</p></div>
+  <div class="okbox"><b>Selection rules.</b> Choose boring, popular tools: the AI has seen far more examples of them, so it writes better code. One language where you can. Managed services over self-hosting. Pick an alternative only for a reason you can name: your team already knows it, a client requires it, or the default can’t do the job.</div></div>
   <div><span class="label">1 · What are you building?</span><div class="picker" style="margin-top:8px">${Object.entries(STACKS).map(([k,v])=>`<button class="pick" type="button" data-stack="${k}" aria-pressed="${k===stackPick}"><strong>${v.h}</strong><small>${v.d}</small></button>`).join("")}</div></div>
-  <div><span class="label">2 · Recommended stack: ${esc(s.h)}</span><div class="stack" style="margin-top:8px">${s.L.map(l=>`<div class="layer"><span class="label">${esc(l[0])}</span><div class="pickname">${esc(l[1])}</div>${l[2]?`<p>${esc(l[2])}</p>`:""}</div>`).join("")}</div></div>
-  <div class="row say"><span class="ic">S</span><div><span class="k">Say this to the AI</span><span class="txt">Use this stack: ${esc(s.L.map(l=>l[1]).join("; "))}. Don’t add other frameworks or services without asking me and explaining why.</span></div></div>
+  <div><span class="label">2 · ${esc(s.h)}: default and alternatives per layer</span><div class="stack" style="margin-top:8px">${s.L.map(l=>`<div class="layer"><span class="label">${esc(l[0])}</span>
+    ${l[1]?`<div class="pickname">${esc(l[1])}</div>`:""}${l[2]?`<p>${esc(l[2])}</p>`:""}
+    ${l[3]?`<div class="alts"><span class="alts-k">${l[1]?"Alternatives":"Options"}</span>${l[3].split(/,\s*(?![^()]*\))/).map(x=>`<span class="alt">${esc(x.trim())}</span>`).join("")}</div>`:""}</div>`).join("")}</div></div>
+  <div class="row say"><span class="ic">S</span><div><span class="k">Say this to the AI</span><span class="txt">${esc(prompt)}</span></div></div>
   <div><span class="label">3 · Feature → library</span><div class="scroll" style="margin-top:8px"><table class="rtable"><thead><tr><th>Feature</th><th>Common choices</th><th>Note</th></tr></thead><tbody>${FEATURES.map(f=>`<tr><td data-label="Feature">${esc(f[0])}</td><td data-label="Common choices">${esc(f[1])}</td><td data-label="Note">${esc(f[2])}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
 function viewSdlc(){

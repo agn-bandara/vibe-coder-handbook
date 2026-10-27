@@ -205,11 +205,15 @@ td:first-child{font-weight:600}
 .pick strong{display:block;font-family:var(--f-disp);font-size:17px;text-transform:uppercase;line-height:1.1}
 .pick small{color:var(--ink-2);font-size:12px}
 .pick[aria-pressed="true"]{border-color:var(--cobalt);background:var(--cobalt-soft)}
-.stack{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.stack{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .layer{background:var(--sheet);border:1.5px solid var(--edge);border-top:3px solid var(--cobalt);padding:10px 12px;min-width:0}
 .layer .label{display:block;margin-bottom:4px}
 .layer .pickname{font-weight:600}
-.layer p{margin:4px 0 0;font-size:13px;color:var(--ink-2)}
+.layer{display:flex;flex-direction:column;gap:4px}
+.layer p{margin:0;font-size:13px;color:var(--ink-2)}
+.alts{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding-top:8px;border-top:1px dashed var(--rule)}
+.alts-k{width:100%;font-family:var(--f-mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2)}
+.alt{font-size:12px;line-height:1.3;padding:2px 7px;border:1px solid var(--rule);border-radius:99px;background:var(--paper)}
 .warnbox{background:var(--warn-soft);border-left:4px solid var(--warn);padding:10px 14px;font-size:14px}
 .okbox{background:var(--go-soft);border-left:4px solid var(--go);padding:10px 14px;font-size:14px}
 
@@ -272,8 +276,8 @@ footer{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);padding-blo
     <div class="exd-ft">Esc or click outside to close</div>
   </div>
 </dialog>
-<script src="content.js?v=20261026182244"></script>
-<script src="examples.js?v=20261026182244"></script>
-<script src="app.js?v=20261026182244"></script>
+<script src="content.js?v=20261027061010"></script>
+<script src="examples.js?v=20261027061010"></script>
+<script src="app.js?v=20261027061010"></script>
 </body>
 </html>

@@ -54,6 +54,10 @@ Examples are wrapped in `R`…`` (String.raw), so backslashes stay as typed. Don
 
 Inside the text, use curly quotes (‘ ’ “ ”) or escape straight double quotes, because entries are double-quoted strings.
 
+### Tech stack layers
+
+Each layer in `STACKS` is `[layer, default pick, note, alternatives]`. Alternatives are one comma-separated string; commas inside brackets are kept together.
+
 ## After editing
 
 `index.html` loads the scripts as `content.js?v=…`. When you change a `.js` file, bump that number (any new value) so browsers fetch the new version instead of a cached one.
