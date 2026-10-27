@@ -141,9 +141,12 @@ let stackPick="web";
 function viewStack(){
   const s=STACKS[stackPick];
   const picks=s.L.filter(l=>l[1]).map(l=>l[1]);
-  const prompt=stackPick==="agent"
-    ? "Build this agent with: "+picks.join("; ")+". Give it only the tools it needs, validate every model reply against a schema, require my approval before any write or delete, and add tracing from the start. Don’t add other frameworks without asking me and explaining why."
-    : "Use this stack: "+picks.join("; ")+". Don’t add other frameworks or services without asking me and explaining why.";
+  const PROMPTS={
+    agent:"Build this agent with: "+picks.join("; ")+". Give it only the tools it needs, validate every model reply against a schema, require my approval before any write or delete, and add tracing from the start. Don’t add other frameworks without asking me and explaining why.",
+    mcp:"Build an MCP server with the official Python (or TypeScript) SDK. Start with read-only tools, each with a clear name, a one-line description and a typed input schema. Use stdio for local use; if it must be remote, use Streamable HTTP with OAuth. Add unit tests for every tool and tell me how to test it in MCP Inspector.",
+    plugin:"Build a plugin for [HOST] using its official SDK. Keep all business logic in a separate core project with unit tests; the host-specific code should be a thin adapter. Follow the host’s UI conventions and packaging rules for its marketplace."
+  };
+  const prompt=PROMPTS[stackPick]||"Use this stack: "+picks.join("; ")+". Don’t add other frameworks or services without asking me and explaining why.";
   return `<div class="intro"><div><span class="label">Sheet 06</span><h2>Tech Stack Selector</h2>
   <p class="lede">Pick what you’re building to see a sensible default for each layer, plus the main alternatives. Then use the feature table to pick libraries.</p></div>
   <div class="okbox"><b>Selection rules.</b> Choose boring, popular tools: the AI has seen far more examples of them, so it writes better code. One language where you can. Managed services over self-hosting. Pick an alternative only for a reason you can name: your team already knows it, a client requires it, or the default can’t do the job.</div></div>

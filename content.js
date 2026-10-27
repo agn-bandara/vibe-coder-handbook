@@ -239,16 +239,32 @@ desktop:{h:"Desktop app",d:"Windows/macOS tools",L:[
 ["Installer & updates","MSIX or Velopack","Sign your installers.","WiX, Inno Setup, Tauri updater, electron-builder"],
 ["Testing","xUnit / pytest + UI automation","","FlaUI, WinAppDriver, Playwright (Electron/Tauri)"]]},
 
-cad:{h:"CAD plugin",d:"AutoCAD, BricsCAD, GstarCAD",L:[
-["Language","C# on .NET","AutoCAD .NET API; BricsCAD and GstarCAD offer compatible .NET APIs. Check each host’s required .NET version.","C++ (ObjectARX / BRX / GRX) for performance-critical work"],
-["Quick automation","AutoLISP / DCL","Fine for small commands; hard to test and scale.","Visual LISP, VBA (legacy), Python via pyautocad / COM"],
-["Architecture","Hexagonal: core logic separate from host API","One core runs on several CAD hosts and in unit tests.",""],
-["Host adapters","One thin adapter project per CAD platform","Isolate API differences here.","Shared-project or multi-targeting builds"],
-["UI","WPF palettes / dialogs (MVVM)","Keeps UI testable.","WinForms (simple dialogs), WebView2 (web UI inside CAD)"],
-["Data","SQLite or JSON + extension dictionaries/XData","Per-entity data lives in the drawing.","SQL Server / PostgreSQL for shared project data"],
-["Other CAD platforms","","","SolidWorks API (C#), Inventor API (C#), Revit API (C#), FreeCAD (Python), Rhino/Grasshopper (C#/Python)"],
-["Testing","xUnit on core logic + scripted test drawings","Most CAD APIs can’t run outside the host: keep logic out of them.",""],
-["Deploy","Autoloader bundle (.bundle) / installer per host","",""]]},
+plugin:{h:"Plugin / extension",d:"Add features inside another app",L:[
+["Start here","The host’s official SDK and docs","Every host has its own API, rules and store. Read its sample plugin before prompting the AI, and pin the host version you target: APIs change between releases.",""],
+["CAD & engineering hosts","C# on .NET (AutoCAD, BricsCAD, GstarCAD)","Compatible .NET APIs; check each host’s required .NET version.","C++ (ObjectARX / BRX / GRX), AutoLISP / DCL (quick commands), SolidWorks API (C#), Inventor API (C#), Revit API (C#), FreeCAD (Python), Rhino / Grasshopper (C#/Python)"],
+["Office add-ins","Office Add-ins (Office.js, TypeScript)","Runs in Excel, Word, Outlook, PowerPoint on Windows, Mac and web.","VSTO (C#, Windows only), VBA macros, Excel-DNA (C# worksheet functions), xlwings / Python in Excel"],
+["Browser extensions","WXT + TypeScript (Manifest V3)","One codebase for Chrome, Edge and Firefox.","Plasmo, CRXJS (Vite), plain Manifest V3"],
+["Code editor extensions","VS Code Extension API (TypeScript)","Also covers Cursor and other VS Code forks.","JetBrains plugins (Kotlin), Neovim (Lua), Zed extensions (Rust), Visual Studio (C#)"],
+["Design tool plugins","Figma Plugin API (TypeScript)","","Penpot plugins, Canva Apps SDK, Adobe UXP (Photoshop, InDesign)"],
+["Web platforms & chat apps","WordPress plugin (PHP)","","Shopify apps, Atlassian Forge (Jira/Confluence), Slack Bolt, Microsoft Teams apps, Google Workspace add-ons (Apps Script)"],
+["AI hosts","An MCP server","One server works in Claude, ChatGPT, VS Code, Cursor and others. See the MCP server stack.","Claude Code plugins and skills, ChatGPT apps"],
+["Architecture","Core logic separate from the host API (hexagonal)","Lets one core run in several hosts and in unit tests.","One thin adapter project per host"],
+["UI inside the host","The host’s own UI kit","Looks native; fewer surprises.","WPF palettes (CAD), WebView2 / task pane HTML, React inside the plugin panel"],
+["Settings & data","Host-provided storage","Per-document data stays with the document.","XData / extension dictionaries (CAD), document properties (Office), chrome.storage, SQLite or JSON file"],
+["Testing","Unit tests on the core + a scripted test file in the host","Most host APIs can’t run outside the host: keep logic out of them.","Host test harnesses, Playwright (browser extensions), @vscode/test-electron"],
+["Distribution","The host’s marketplace","Review, auto-updates and trust built in. Sign your package.","Autodesk App Store, Microsoft AppSource, Chrome Web Store, VS Code Marketplace, Figma Community, WordPress.org, private installer / .bundle"]]},
+
+mcp:{h:"MCP server",d:"Give AI apps tools and data",L:[
+["What it is","A small service that exposes tools, data and prompts to any AI app","Write it once; Claude, ChatGPT, VS Code, Cursor and others can all use it.","MCP client (inside your own agent, to use other people’s servers)"],
+["SDK","Python SDK or TypeScript SDK","Official and best supported; a decorator turns a function into a tool. C#, Go, Rust and Ruby SDKs are also fully supported.","C#, Go, Rust, Ruby, Java, Kotlin, Swift, PHP, FastMCP (higher-level Python)"],
+["Building blocks","Tools first","Tools are actions the AI can call. Add Resources (readable data) and Prompts (reusable templates) only when you need them.",""],
+["Transport","stdio for local, Streamable HTTP for remote","stdio: the AI app starts your server on the user’s machine. Streamable HTTP: one hosted endpoint for many users.","Custom transport (rare)"],
+["Authorization","None for local stdio; OAuth for remote","Remote servers that touch user data need proper sign-in, not a shared key.","API key or internal network only (internal tools)"],
+["Inputs & outputs","Typed schemas (Pydantic / Zod)","The SDK turns them into the tool’s input schema; clear names and descriptions help the AI pick the right tool.","JSON Schema by hand"],
+["Hosting (remote)","Cloudflare Workers or Google Cloud Run","","Vercel, Fly.io, Azure Functions / Container Apps, AWS Lambda, your own server"],
+["Testing","MCP Inspector + unit tests","Call each tool by hand and see the raw messages; unit-test the tool functions. Then try it in a real AI app.","Claude Desktop, Claude Code, VS Code, Cursor, ChatGPT"],
+["Safety","Read-only tools by default","Mark destructive tools clearly and ask for confirmation. Give the server the smallest permissions possible, log every call, and treat text that tools return as untrusted (prompt injection).",""],
+["Packaging & sharing","npm or PyPI package (run with npx / uvx)","Easiest for other developers to install.","Docker image, MCP Bundle (.mcpb) for one-click desktop install, listing in the MCP Registry"]]},
 
 data:{h:"Data & AI app",d:"Analysis, ML, LLM features",L:[
 ["Language","Python","The ecosystem lives here.","R (statistics), Julia (numerics), TypeScript (LLM apps)"],
