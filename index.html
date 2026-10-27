@@ -210,10 +210,22 @@ td:first-child{font-weight:600}
 .layer .label{display:block;margin-bottom:4px}
 .layer .pickname{font-weight:600}
 .layer{display:flex;flex-direction:column;gap:4px}
+.layer-btn{font:inherit;color:var(--ink);text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;box-shadow:2px 2px 0 var(--rule)}
+.layer-btn:hover,.layer-btn:focus-visible{border-color:var(--ink);box-shadow:4px 4px 0 var(--cobalt);transform:translate(-1px,-1px);outline:none}
+.layer .pickname{display:block}
+.lnote{font-size:13px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lmore{margin-top:auto;padding-top:8px;font-family:var(--f-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--cobalt);text-align:right}
+.pane .k{display:block;font-family:var(--f-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-bottom:6px}
+.lay-default{border-left:3px solid var(--cobalt);background:var(--paper);padding:10px 14px}
+.lay-default strong{font-size:17px}
+.lay-default p{margin:4px 0 0;color:var(--ink-2);font-size:14px}
+.alt-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.alt-list li{border:1.5px solid var(--edge);border-radius:3px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;background:var(--sheet)}
+.alt-list li strong{font-size:14px}
+.alt-list li span{font-size:12.5px;color:var(--ink-2)}
+.lay-nav{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){.layer-btn{transition:none}.layer-btn:hover{transform:none}}
 .layer p{margin:0;font-size:13px;color:var(--ink-2)}
-.alts{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding-top:8px;border-top:1px dashed var(--rule)}
-.alts-k{width:100%;font-family:var(--f-mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2)}
-.alt{font-size:12px;line-height:1.3;padding:2px 7px;border:1px solid var(--rule);border-radius:99px;background:var(--paper)}
 .warnbox{background:var(--warn-soft);border-left:4px solid var(--warn);padding:10px 14px;font-size:14px}
 .okbox{background:var(--go-soft);border-left:4px solid var(--go);padding:10px 14px;font-size:14px}
 
@@ -276,8 +288,8 @@ footer{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);padding-blo
     <div class="exd-ft">Esc or click outside to close</div>
   </div>
 </dialog>
-<script src="content.js?v=20261027061719"></script>
-<script src="examples.js?v=20261027061719"></script>
-<script src="app.js?v=20261027061719"></script>
+<script src="content.js?v=20261027070734"></script>
+<script src="examples.js?v=20261027070734"></script>
+<script src="app.js?v=20261027070734"></script>
 </body>
 </html>

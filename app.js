@@ -39,6 +39,24 @@ function colorCode(code,lang){
     return isComment?esc(line.slice(0,i))+`<span class="cm">${esc(line.slice(i))}</span>`:esc(line);
   }).join("\n");
 }
+/* ---------- STACK LAYER WINDOW ---------- */
+const splitAlts=s=>s.split(/,\s*(?![^()]*\))/).map(x=>x.trim()).filter(Boolean);
+function openLayer(i){
+  const s=STACKS[stackPick], l=s.L[i], dlg=$("#exDialog"); if(!l||!dlg)return;
+  OPEN=null;
+  $("#exTitle").textContent=l[0];
+  $("#exSub").textContent=s.h+" · layer "+(i+1)+" of "+s.L.length;
+  $("#dTabs").innerHTML="";
+  const alts=splitAlts(l[3]||"").map(x=>{const m=x.match(/^(.*?)\s*\((.*)\)$/);return m?[m[1],m[2]]:[x,""]});
+  $("#dPanel").innerHTML=`<div class="pane">
+    ${l[1]?`<div class="lay-default"><span class="k">Default</span><strong>${esc(l[1])}</strong>${l[2]?`<p>${esc(l[2])}</p>`:""}</div>`:(l[2]?`<p class="lead">${esc(l[2])}</p>`:"")}
+    <div><span class="k">${l[1]?"Alternatives":"Options"}</span><ul class="alt-list">${alts.map(([n,d])=>`<li><strong>${esc(n)}</strong>${d?`<span>${esc(d)}</span>`:""}</li>`).join("")}</ul></div>
+    ${l[1]?`<p class="hint">Pick an alternative only for a reason you can name: your team already knows it, a client requires it, or the default can’t do the job.</p>`:""}
+    <div class="lay-nav">${i>0?`<button type="button" class="copy-btn" data-layer="${i-1}">← ${esc(s.L[i-1][0])}</button>`:"<span></span>"}${i<s.L.length-1?`<button type="button" class="copy-btn" data-layer="${i+1}">${esc(s.L[i+1][0])} →</button>`:""}</div>
+  </div>`;
+  if(typeof dlg.showModal==="function"){if(!dlg.open)dlg.showModal()}else dlg.setAttribute("open","");
+  $("#dPanel").scrollTop=0;
+}
 /* ---------- DETAIL WINDOW ---------- */
 let OPEN=null, OPEN_TAB="overview";
 function row(cls,ic,label,text){return text?`<div class="row ${cls}"><span class="ic">${ic}</span><div><span class="k">${label}</span>${esc(text)}</div></div>`:""}
@@ -151,9 +169,12 @@ function viewStack(){
   <p class="lede">Pick what you’re building to see a sensible default for each layer, plus the main alternatives. Then use the feature table to pick libraries.</p></div>
   <div class="okbox"><b>Selection rules.</b> Choose boring, popular tools: the AI has seen far more examples of them, so it writes better code. One language where you can. Managed services over self-hosting. Pick an alternative only for a reason you can name: your team already knows it, a client requires it, or the default can’t do the job.</div></div>
   <div><span class="label">1 · What are you building?</span><div class="picker" style="margin-top:8px">${Object.entries(STACKS).map(([k,v])=>`<button class="pick" type="button" data-stack="${k}" aria-pressed="${k===stackPick}"><strong>${v.h}</strong><small>${v.d}</small></button>`).join("")}</div></div>
-  <div><span class="label">2 · ${esc(s.h)}: default and alternatives per layer</span><div class="stack" style="margin-top:8px">${s.L.map(l=>`<div class="layer"><span class="label">${esc(l[0])}</span>
-    ${l[1]?`<div class="pickname">${esc(l[1])}</div>`:""}${l[2]?`<p>${esc(l[2])}</p>`:""}
-    ${l[3]?`<div class="alts"><span class="alts-k">${l[1]?"Alternatives":"Options"}</span>${l[3].split(/,\s*(?![^()]*\))/).map(x=>`<span class="alt">${esc(x.trim())}</span>`).join("")}</div>`:""}</div>`).join("")}</div></div>
+  <div><span class="label">2 · ${esc(s.h)}: default per layer · click a layer for alternatives</span><div class="stack" style="margin-top:8px">${s.L.map((l,i)=>{
+    const n=l[3]?splitAlts(l[3]).length:0;
+    const inner=`<span class="label">${esc(l[0])}</span>${l[1]?`<span class="pickname">${esc(l[1])}</span>`:""}${l[2]?`<span class="lnote">${esc(l[2])}</span>`:""}`;
+    return n?`<button type="button" class="layer layer-btn" data-layer="${i}" aria-haspopup="dialog">${inner}<span class="lmore">${n} ${l[1]?(n===1?"alternative":"alternatives"):(n===1?"option":"options")} →</span></button>`
+            :`<div class="layer">${inner}</div>`;
+  }).join("")}</div></div>
   <div class="row say"><span class="ic">S</span><div><span class="k">Say this to the AI</span><span class="txt">${esc(prompt)}</span></div></div>
   <div><span class="label">3 · Feature → library</span><div class="scroll" style="margin-top:8px"><table class="rtable"><thead><tr><th>Feature</th><th>Common choices</th><th>Note</th></tr></thead><tbody>${FEATURES.map(f=>`<tr><td data-label="Feature">${esc(f[0])}</td><td data-label="Common choices">${esc(f[1])}</td><td data-label="Note">${esc(f[2])}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
@@ -214,6 +235,8 @@ document.addEventListener("click",ev=>{
   if(rg){const n=+rg.dataset.rung;levels.patterns=(levels.patterns===n?0:n);render();return}
   const chip=ev.target.closest(".chip");
   if(chip){filters[chip.parentElement.dataset.for]=chip.dataset.cat;render();return}
+  const ly=ev.target.closest("[data-layer]");
+  if(ly){openLayer(+ly.dataset.layer);return}
   const st=ev.target.closest("[data-stack]");
   if(st){stackPick=st.dataset.stack;render();return}
   const lb=ev.target.closest(".ex-lang");
