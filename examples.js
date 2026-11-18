@@ -1661,4 +1661,350 @@ js: R`const redact = (t) => t
 
 await llm({ user: redact(customerMessage) });`},
 
+/* ---- security additions ---- */
+"Secrets in Git History": {
+py: R`# Scan every commit, not just current files
+#   gitleaks git -v                 # or: trufflehog git file://. --only-verified
+#
+# Found one? In this order:
+#   1. Rotate the key at the provider (the old one is burned)
+#   2. Add the file to .gitignore
+#   3. Optional clean-up: git filter-repo --path .env --invert-paths
+#
+# .pre-commit-config.yaml
+# repos:
+#   - repo: https://github.com/gitleaks/gitleaks
+#     rev: v8.18.4
+#     hooks: [{ id: gitleaks }]`,
+js: R`// package.json — block commits that contain secrets
+{
+  "scripts": { "prepare": "husky" },
+  "lint-staged": { "*": "gitleaks protect --staged -v" }
+}
+// .gitignore
+// .env
+// .env.*.local
+// !.env.example`},
+
+"Client-Exposed Keys": {
+py: R`# Django / FastAPI templates: only pass what the page needs
+context = {
+    "stripe_publishable_key": os.environ["STRIPE_PUBLISHABLE_KEY"],  # pk_... is public by design
+    # never: os.environ["STRIPE_SECRET_KEY"] (sk_...) or os.environ["OPENAI_API_KEY"]
+}`,
+js: R`// BAD: ends up in every visitor's browser
+// const openai = new OpenAI({ apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY });
+
+// GOOD: app/api/summarise/route.js runs on the server only
+import "server-only";
+import OpenAI from "openai";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // no NEXT_PUBLIC_ prefix
+
+export async function POST(req) {
+  const { text } = await req.json();
+  const r = await openai.responses.create({ model: "gpt-4.1-mini", input: text });
+  return Response.json({ summary: r.output_text });
+}`},
+
+"Server-Side Role Checks": {
+py: R`from fastapi import Depends, HTTPException
+
+def require_role(role: str):
+    def check(user = Depends(current_user)):        # user comes from the server session
+        if user.role != role:
+            raise HTTPException(403)
+        return user
+    return check
+
+@app.delete("/api/admin/users/{uid}")
+def delete_user(uid: int, admin = Depends(require_role("admin"))):
+    ...`,
+js: R`const requireRole = (role) => (req, res, next) => {
+  // role from the server-side session/database, never from req.body or headers
+  if (req.session?.user?.role !== role) return res.sendStatus(403);
+  next();
+};
+
+app.use("/api/admin", requireAuth, requireRole("admin"));`},
+
+"Session & Token Handling": {
+py: R`import secrets, datetime as dt, jwt
+
+SECRET = os.environ["JWT_SECRET"]          # generated with secrets.token_urlsafe(64)
+
+def issue(user):
+    payload = {"sub": str(user.id), "ver": user.token_version,
+               "exp": dt.datetime.now(dt.UTC) + dt.timedelta(minutes=15)}
+    return jwt.encode(payload, SECRET, algorithm="HS256")
+
+def on_password_change(user):
+    user.token_version += 1                  # every old token now fails the "ver" check
+    db.save(user)`,
+js: R`// Store the session in an httpOnly cookie, not localStorage
+res.cookie("session", token, {
+  httpOnly: true, secure: true, sameSite: "lax", maxAge: 15 * 60 * 1000,
+});
+
+// Logout / password change: invalidate on the server too
+await db.session.deleteMany({ where: { userId: user.id } });
+res.clearCookie("session");`},
+
+"Exposed Admin & Debug Endpoints": {
+py: R`# FastAPI: turn off docs in production, register dev-only routes conditionally
+IS_PROD = os.environ.get("APP_ENV") == "production"
+app = FastAPI(docs_url=None if IS_PROD else "/docs",
+              openapi_url=None if IS_PROD else "/openapi.json")
+
+if not IS_PROD:
+    app.include_router(dev_tools_router)      # /api/seed, /api/debug`,
+js: R`// Only mount dev routes outside production
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api/debug", debugRouter);
+  app.use("/api/seed", seedRouter);
+}
+// Apollo: disable introspection in production
+new ApolloServer({ schema, introspection: process.env.NODE_ENV !== "production" });`},
+
+"Row-Level Security & Storage Rules": {
+py: R`# Supabase SQL editor — run for every table holding user data
+#
+# alter table projects enable row level security;
+#
+# create policy "own rows: read" on projects
+#   for select using (auth.uid() = owner_id);
+#
+# create policy "own rows: write" on projects
+#   for insert with check (auth.uid() = owner_id);
+#
+# Check: select tablename from pg_tables
+#        where schemaname = 'public' and not rowsecurity;   -- must return nothing`,
+js: R`// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /projects/{id} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == resource.data.ownerId;
+    }
+  }
+}
+// never: allow read, write: if true;`},
+
+"Leaky Error Responses": {
+py: R`import logging, uuid
+from fastapi.responses import JSONResponse
+log = logging.getLogger("app")
+
+@app.exception_handler(Exception)
+async def handle(request, exc):
+    rid = str(uuid.uuid4())
+    log.exception("unhandled error", extra={"request_id": rid})    # full detail stays on the server
+    return JSONResponse({"error": "Something went wrong", "request_id": rid}, status_code=500)`,
+js: R`app.use((err, req, res, next) => {
+  const requestId = crypto.randomUUID();
+  logger.error({ err, requestId });                 // full detail stays on the server
+  res.status(500).json({ error: "Something went wrong", requestId });
+  // never: res.status(500).json(err) or err.stack / err.message from the database
+});`},
+
+"Mass Assignment": {
+py: R`from pydantic import BaseModel
+
+class ProfileUpdate(BaseModel):          # only fields a user may change
+    name: str
+    company: str | None = None
+    model_config = {"extra": "forbid"}  # reject role, owner_id, credits...
+
+@app.patch("/api/me")
+def update_me(body: ProfileUpdate, user = Depends(current_user)):
+    db.update_user(user.id, **body.model_dump(exclude_unset=True))`,
+js: R`import { z } from "zod";
+const ProfileUpdate = z.object({ name: z.string().max(80), company: z.string().optional() }).strict();
+
+app.patch("/api/me", requireAuth, async (req, res) => {
+  const data = ProfileUpdate.parse(req.body);          // role, isPaid, ownerId are rejected
+  await db.user.update({ where: { id: req.user.id }, data });
+  res.sendStatus(204);
+  // never: db.user.update({ where: { id }, data: req.body })
+});`},
+
+"CORS Misconfiguration": {
+py: R`from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://app.example.com"],   # explicit list, never "*" with credentials
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+)`,
+js: R`import cors from "cors";
+const allowed = ["https://app.example.com", "https://admin.example.com"];
+
+app.use(cors({
+  origin: (origin, cb) => cb(null, !origin || allowed.includes(origin)),
+  credentials: true,
+}));
+// never: cors({ origin: true, credentials: true })`},
+
+"Open Redirects": {
+py: R`from urllib.parse import urlparse
+
+def safe_next(url: str | None) -> str:
+    if not url:
+        return "/"
+    p = urlparse(url)
+    # only same-site relative paths like /dashboard (not //evil.com or https://evil.com)
+    if p.scheme or p.netloc or not url.startswith("/") or url.startswith("//"):
+        return "/"
+    return url`,
+js: R`function safeNext(url) {
+  if (!url || !url.startsWith("/") || url.startsWith("//") || url.startsWith("/\\")) return "/";
+  return url;                       // same-site relative path only
+}
+app.get("/login/done", (req, res) => res.redirect(safeNext(req.query.next)));`},
+
+"File Upload Validation": {
+py: R`import uuid, filetype                     # pip install filetype
+
+ALLOWED = {"image/png", "image/jpeg", "application/pdf"}
+MAX_BYTES = 10 * 1024 * 1024
+
+async def save_upload(file):
+    data = await file.read(MAX_BYTES + 1)
+    if len(data) > MAX_BYTES:
+        raise ValueError("File too large")
+    kind = filetype.guess(data)                # checks the bytes, not the extension
+    if not kind or kind.mime not in ALLOWED:
+        raise ValueError("File type not allowed")
+    key = f"uploads/{uuid.uuid4()}.{kind.extension}"   # never the user's filename
+    storage.put(key, data, content_type=kind.mime)
+    return key`,
+js: R`import { fileTypeFromBuffer } from "file-type";
+const ALLOWED = new Set(["image/png", "image/jpeg", "application/pdf"]);
+
+async function saveUpload(buffer) {
+  if (buffer.length > 10 * 1024 * 1024) throw new Error("File too large");
+  const type = await fileTypeFromBuffer(buffer);      // checks the bytes
+  if (!type || !ALLOWED.has(type.mime)) throw new Error("File type not allowed");
+  const key = "uploads/" + crypto.randomUUID() + "." + type.ext;
+  await storage.put(key, buffer, { contentType: type.mime });
+  return key;
+}`},
+
+"Webhook Signature Verification": {
+py: R`import stripe
+
+@app.post("/webhooks/stripe")
+async def stripe_webhook(request: Request):
+    payload = await request.body()                      # raw bytes, not parsed JSON
+    sig = request.headers.get("stripe-signature")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, os.environ["STRIPE_WEBHOOK_SECRET"])
+    except (ValueError, stripe.error.SignatureVerificationError):
+        raise HTTPException(400)
+    if processed.exists(event["id"]):
+        return {"ok": True}                             # already handled
+    handle(event); processed.add(event["id"])
+    return {"ok": True}`,
+js: R`import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+app.post("/webhooks/stripe", express.raw({ type: "application/json" }), (req, res) => {
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.get("stripe-signature"),
+                                           process.env.STRIPE_WEBHOOK_SECRET);
+  } catch {
+    return res.sendStatus(400);                        // fake or tampered
+  }
+  handleOnce(event);                                   // dedupe by event.id
+  res.sendStatus(200);
+});`},
+
+"Cross-Site Scripting (XSS)": {
+py: R`# Jinja2 / Django escape by default — keep it that way
+# BAD:  {{ comment | safe }}
+# GOOD: {{ comment }}
+
+# When rich HTML is genuinely needed, sanitise it
+import nh3                                   # pip install nh3
+clean = nh3.clean(user_html, tags={"b", "i", "p", "a", "ul", "li"})`,
+js: R`// React escapes text by default
+<p>{comment}</p>                                  // safe
+
+// BAD: <div dangerouslySetInnerHTML={{ __html: comment }} />
+// When HTML is required, sanitise first:
+import DOMPurify from "dompurify";
+<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment) }} />
+
+// Plain DOM: textContent, never innerHTML
+el.textContent = comment;`},
+
+"CSRF Protection": {
+py: R`# Django: CSRF middleware is on by default — keep {% csrf_token %} in forms
+# FastAPI with cookie sessions:
+response.set_cookie("session", token, httponly=True, secure=True, samesite="lax")
+
+# and never change data on GET
+@app.post("/projects/{pid}/delete")          # not @app.get
+def delete_project(pid: int, user = Depends(current_user)): ...`,
+js: R`// Next.js Server Actions check the Origin header for you.
+// Express with cookie sessions:
+res.cookie("session", token, { httpOnly: true, secure: true, sameSite: "lax" });
+
+// Double-submit token for forms / fetch:
+app.use((req, res, next) => {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method) &&
+      req.get("x-csrf-token") !== req.cookies.csrf) return res.sendStatus(403);
+  next();
+});`},
+
+"PII in Logs & Analytics": {
+py: R`import sentry_sdk
+sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], send_default_pii=False)
+
+SENSITIVE = {"password", "token", "email", "phone", "card"}
+def scrub(d: dict) -> dict:
+    return {k: ("[REDACTED]" if k.lower() in SENSITIVE else v) for k, v in d.items()}
+
+log.info("signup", extra=scrub({"email": email, "plan": plan}))
+# never: print(request.json()) in an auth route`,
+js: R`import pino from "pino";
+const logger = pino({
+  redact: ["req.headers.authorization", "req.headers.cookie", "*.password", "*.email", "*.token"],
+});
+
+// Analytics: send IDs, not personal data
+posthog.capture({ distinctId: user.id, event: "project_created", properties: { plan } });
+// never: console.log(req.body) in an auth route`},
+
+"HTTPS Everywhere": {
+py: R`# Django settings.py (production)
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")   # behind a load balancer`,
+js: R`import helmet from "helmet";
+app.set("trust proxy", 1);
+app.use((req, res, next) =>
+  req.secure ? next() : res.redirect(301, "https://" + req.headers.host + req.originalUrl));
+app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));`},
+
+"A03 Software Supply Chain Failures": {
+py: R`# Before installing a package the AI suggested:
+#   pip index versions <name>          # does it exist? how many releases?
+#   open https://pypi.org/project/<name>/  -> age, downloads, repo link, maintainers
+# Pin exact versions and verify hashes in CI:
+#   pip install --require-hashes -r requirements.txt
+# Audit regularly:
+#   pip-audit`,
+js: R`// Before installing a package the AI suggested:
+//   npm view <name> time.created repository.url   // brand-new or no repo = suspicious
+// Install exactly what the lockfile says, without running install scripts:
+//   npm ci --ignore-scripts
+// Audit regularly:
+//   npm audit --omit=dev`},
+
 };

@@ -135,11 +135,32 @@ function viewTesting(){
   ${chipBar("testing",TESTING)}<span class="count">${filtered("testing",TESTING).length} entries</span>
   <div class="grid">${filtered("testing",TESTING).map(e=>card(e)).join("")}</div>`;
 }
+let secDone={};
+try{secDone=JSON.parse(localStorage.getItem("secChecklist")||"{}")||{}}catch(e){secDone={}}
+const secKey=(g,t)=>norm(g+"|"+t);
+function secAuditPrompt(){
+  return "Audit this codebase for the security issues below. For each item, answer PASS, FAIL or N/A with the file and line as evidence, and for every FAIL give the fix. Check Git history for secrets, not just current files. Don’t change any code until I approve the fixes.\n\n"
+   +SEC_CHECKLIST.map(g=>g.g.toUpperCase()+"\n"+g.i.map(x=>"- "+x[0]).join("\n")).join("\n\n");
+}
+function checklistHtml(){
+  const total=SEC_CHECKLIST.reduce((n,g)=>n+g.i.length,0);
+  const done=SEC_CHECKLIST.reduce((n,g)=>n+g.i.filter(x=>secDone[secKey(g.g,x[0])]).length,0);
+  return `<section class="checklist" aria-labelledby="chkTitle">
+  <div class="chk-hd"><div><span class="label">Before you ship</span><h3 id="chkTitle">Pre-launch security checklist</h3>
+  <p>The checks vibe-coded apps fail most often. Tick each one when you’ve confirmed it in your app. Click a check to see why it matters and how to fix it.</p></div>
+  <div class="chk-actions"><span class="chk-count"><b>${done}</b> / ${total} checked</span>
+  <button type="button" class="copy-btn" id="secPromptCopy">Copy audit prompt</button>
+  ${done?`<button type="button" class="copy-btn chk-reset" id="secReset">Clear ticks</button>`:""}</div></div>
+  <div class="chk-bar" aria-hidden="true"><i style="width:${Math.round(done/total*100)}%"></i></div>
+  <div class="chk-groups">${SEC_CHECKLIST.map(g=>`<div class="chk-group"><span class="label">${esc(g.g)}</span><ul>${g.i.map(x=>{const k=secKey(g.g,x[0]);const id="chk-"+k.slice(0,40);return `<li><input type="checkbox" id="${id}" data-chk="${k}"${secDone[k]?" checked":""}><label for="${id}">${esc(x[0])}</label><button type="button" class="chk-open" data-sec="${esc(x[1])}" aria-label="Open ${esc(x[1])}">Why →</button></li>`}).join("")}</ul></div>`).join("")}</div>
+  </section>`;
+}
 function viewSecurity(){
   return `<div class="intro"><div><span class="label">Sheet 04</span><h2>Security</h2>
   <p class="lede">AI-generated code fails most often here, because insecure code still works in a demo. Security bugs only show up when someone attacks.</p>
-  <p>Built on the OWASP Top 10 (2025 edition) for web apps, plus the OWASP list of risks specific to LLM features.</p></div>
-  <div class="warnbox"><b>Never let the AI:</b> put API keys in frontend code · build SQL from strings · write its own login or crypto · install packages you haven’t verified · give an AI agent write access without an approval step.</div></div>
+  <p>Built on the OWASP Top 10 (2025 edition) for web apps, the mistakes most common in vibe-coded apps, and the OWASP risks specific to LLM features.</p></div>
+  <div class="warnbox"><b>Never let the AI:</b> put API keys in frontend code · build SQL from strings · write its own login or crypto · trust the client for roles or IDs · install packages you haven’t verified · give an AI agent write access without an approval step.</div></div>
+  ${checklistHtml()}
   ${chipBar("security",SECURITY)}<span class="count">${filtered("security",SECURITY).length} entries</span>
   <div class="grid">${filtered("security",SECURITY).map(e=>card(e)).join("")}</div>`;
 }
@@ -235,6 +256,13 @@ document.addEventListener("click",ev=>{
   if(rg){const n=+rg.dataset.rung;levels.patterns=(levels.patterns===n?0:n);render();return}
   const chip=ev.target.closest(".chip");
   if(chip){filters[chip.parentElement.dataset.for]=chip.dataset.cat;render();return}
+  const so=ev.target.closest("[data-sec]");
+  if(so){const e=SECURITY.find(x=>norm(x.n)===norm(so.dataset.sec));if(e)openDetail(e);return}
+  if(ev.target.closest("#secReset")){secDone={};try{localStorage.removeItem("secChecklist")}catch(e){}render();return}
+  const sp=ev.target.closest("#secPromptCopy");
+  if(sp){const txt=secAuditPrompt();const done=()=>{sp.textContent="Copied";setTimeout(()=>sp.textContent="Copy audit prompt",1400)};
+    try{navigator.clipboard.writeText(txt).then(done,()=>{sp.textContent="Copy failed"})}catch(e){sp.textContent="Copy failed"}
+    return}
   const ly=ev.target.closest("[data-layer]");
   if(ly){openLayer(+ly.dataset.layer);return}
   const st=ev.target.closest("[data-stack]");
@@ -269,3 +297,10 @@ window.addEventListener("scroll",()=>{
   if(!compact&&y>90){compact=true;hdr.classList.add("compact")}
   else if(compact&&y<20){compact=false;hdr.classList.remove("compact")}
 },{passive:true});
+document.addEventListener("change",ev=>{
+  const c=ev.target.closest("[data-chk]"); if(!c)return;
+  if(c.checked)secDone[c.dataset.chk]=1; else delete secDone[c.dataset.chk];
+  try{localStorage.setItem("secChecklist",JSON.stringify(secDone))}catch(e){}
+  const y=window.scrollY; render(); window.scrollTo(0,y);
+  const again=document.querySelector('[data-chk="'+c.dataset.chk+'"]'); if(again)again.focus();
+});
